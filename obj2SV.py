@@ -171,15 +171,42 @@ def init():
     #read arguments for root folder path to the models
     if len(sys.argv) != 2:
         print('Argument missing: provide a root folder path to the models')
-        return
-  
+        return False
+    
     rootinputpath = sys.argv[1]
 
-    #create an output path one level up, otherwise it will recursively process published models
-    rootoutputpath = os.path.dirname(rootinputpath) + "/published/" + str(time.time()).replace(".", "")
+    if os.path.exists(rootinputpath  + "/.svx.json") == False:
+        print("ERROR: unable to find " + svxpath)
+        return False
+
+    #create an output path one level up 
+    #do not allow user to specify the output path 
+    #if root output path is a child of the inputpathroot, program will end up recursively process existing published models
+    rootoutputpath = os.path.dirname(rootinputpath) + "/published/" + str(time.time()).replace(".", "") + "_Output_GlTF"
     os.makedirs(rootoutputpath)
 
     return [rootinputpath, rootoutputpath]
+#---------------------------------------------------------------------------------------
+
+#check for presence of OBJ, PNG and MTL files
+def checkPaths(rootinputpath):
+
+    try:
+        next(glob.iglob(rootinputpath + "/*.png"))
+    except StopIteration:
+        return False
+
+    try:
+        next(glob.iglob(rootinputpath + "/*.obj"))
+    except StopIteration:
+        return False
+
+    try:
+        next(glob.iglob(rootinputpath + "/*.mtl"))
+    except StopIteration:
+        return False
+    
+    return True
 #---------------------------------------------------------------------------------------
 
 def publish(rootinputpath,rootoutputpath):
@@ -187,29 +214,41 @@ def publish(rootinputpath,rootoutputpath):
     #iterate the root path for models in individual folders 
     for objpath in glob.iglob(rootinputpath + "/*/*.obj", recursive=True):
 
+        inputobjpath = os.path.dirname(objpath)
         #create an output folder for published models
         #simplify the obj file name else obj2gltf converter fails, use folder name without spaces
-        dirname = os.path.basename(os.path.dirname(objpath))
-        dirname = re.sub("\W+","", dirname) #remove all non alphabets/numbers
+        outputobjdir = os.path.basename(os.path.dirname(objpath))
+        outputobjdir = re.sub("\W+","", outputobjdir) #remove all non alphabets/numbers
 
-        outputpath = rootoutputpath + "/" + dirname
+        outputpath = rootoutputpath + "/" + outputobjdir
         
-        #create output folder
-        os.makedirs(outputpath)
-        
-        #load template svx.json
-        #generate 4 levels of LOD using Meshlab server
-        svx = loadSVX(rootinputpath)
-        
-        generateLODS(objpath, outputpath, svx) 
+        if checkPaths(inputobjpath):
+            #create output folder        
+            if not os.path.exists(outputpath):
+                os.makedirs(outputpath)
 
-        saveSVX(outputpath,svx)
+                #load template svx.json
+                svx = loadSVX(rootinputpath)
+            
+                #generate mesh/texture lods and convert to glb
+                generateLODS(objpath, outputpath, svx) 
+
+                #create the svx file necessary for Smithsonian Voyager
+                saveSVX(outputpath,svx)
 #---------------------------------------------------------------------------------------
+
+#Input parameters:
+# 1 - Root input path to OBJ files with a single PNG texture
+
+# NOTE:
+#       Looks for .svx.json in the input path folder
 
 def main():
     paths = init()
-    publish(paths[0], paths[1])
-    cleanupFiles(paths[1])
+
+    if not paths == False:
+        publish(paths[0], paths[1])
+        cleanupFiles(paths[1])
 #---------------------------------------------------------------------------------------
 
 main()

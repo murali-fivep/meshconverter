@@ -9,7 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "args": ["c:/af/testinput"],
+            "args": ["D:/af/wip/24_Aug_2020_AfricanFossils_Assets/24_Aug_2020_Input_OBJ"],
             "console": "integratedTerminal"
         }
     ]
