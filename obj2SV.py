@@ -148,18 +148,18 @@ def saveSVX(outputpath, svx):
         json.dump(svx, f)
 #---------------------------------------------------------------------------------------
 
-def cleanupFiles(rootoutputpath):
+def purgeFiles(outpath):
 
-    for path in glob.iglob(rootoutputpath + "/*/*.obj", recursive=True):
+    for path in glob.iglob(outpath + "/*.obj", recursive=True):
         os.remove(path)
 
-    for path in glob.iglob(rootoutputpath + "/*/*.mtl", recursive=True):
+    for path in glob.iglob(outpath + "/*.mtl", recursive=True):
         os.remove(path)
 
-    for path in glob.iglob(rootoutputpath + "/*/*.png", recursive=True):
+    for path in glob.iglob(outpath + "/*.png", recursive=True):
         os.remove(path)
 
-    for path in glob.iglob(rootoutputpath + "/*/*.log", recursive=True):
+    for path in glob.iglob(outpath + "/*.log", recursive=True):
         os.remove(path)
 
 #---------------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ def checkPaths(rootinputpath):
     return True
 #---------------------------------------------------------------------------------------
 
-def publish(rootinputpath,rootoutputpath):
+def publishToGLB(rootinputpath, rootoutputpath):
 
     #iterate the root path for models in individual folders 
     for objpath in glob.iglob(rootinputpath + "/*/*.obj", recursive=True):
@@ -217,10 +217,10 @@ def publish(rootinputpath,rootoutputpath):
         inputobjpath = os.path.dirname(objpath)
         #create an output folder for published models
         #simplify the obj file name else obj2gltf converter fails, use folder name without spaces
-        outputobjdir = os.path.basename(os.path.dirname(objpath))
-        outputobjdir = re.sub("\W+","", outputobjdir) #remove all non alphabets/numbers
+        outputobjdirname = os.path.basename(os.path.dirname(objpath))
+        outputobjdirname = re.sub("\W+","", outputobjdirname) #remove all non alphabets/numbers
 
-        outputpath = rootoutputpath + "/" + outputobjdir
+        outputpath = rootoutputpath + "/" + outputobjdirname
         
         if checkPaths(inputobjpath):
             #create output folder        
@@ -235,6 +235,9 @@ def publish(rootinputpath,rootoutputpath):
 
                 #create the svx file necessary for Smithsonian Voyager
                 saveSVX(outputpath,svx)
+
+                #purge input files
+                purgeFiles(outputpath)
 #---------------------------------------------------------------------------------------
 
 #Input parameters:
@@ -247,8 +250,7 @@ def main():
     paths = init()
 
     if not paths == False:
-        publish(paths[0], paths[1])
-        cleanupFiles(paths[1])
+        publishToGLB(paths[0], paths[1])
 #---------------------------------------------------------------------------------------
 
 main()
